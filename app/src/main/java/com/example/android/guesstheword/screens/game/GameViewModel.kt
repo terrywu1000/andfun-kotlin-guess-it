@@ -16,6 +16,8 @@
 
 package com.example.android.guesstheword.screens.game
 
+import android.os.CountDownTimer
+import android.text.format.DateUtils
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -26,23 +28,29 @@ import androidx.lifecycle.ViewModel
  */
 class GameViewModel : ViewModel() {
 
-    // TODO (01) Copy over the provided companion object with the timer constants
+    companion object {
+        private const val DONE = 0L
+        private const val ONE_SECOND = 1000L
+        private const val COUNTDOWN_TIME = 10000L
+    }
 
-    // TODO (02) Create a timer field of type CountDownTimer
+    private val timer: CountDownTimer
 
-    // TODO (03) Create a properly encapsulated LiveData for the current time called currentTime
-    // Its type should be Long
 
     // The current word
     private val _word = MutableLiveData<String>()
     val word: LiveData<String>
         get() = _word
 
-
     // The current score
     private val _score = MutableLiveData<Int>()
     val score: LiveData<Int>
         get() = _score
+
+    private val _time = MutableLiveData<Long>()
+    val time: LiveData<Long>
+        get() = _time
+
 
 
     // The list of words - the front of the list is the next word to guess
@@ -57,8 +65,19 @@ class GameViewModel : ViewModel() {
         resetList()
         nextWord()
         _score.value = 0
+        _time.value = COUNTDOWN_TIME/1000
 
-        // TODO (04) Copy over the CountDownTimer code and then update currentTime and
+        timer = object : CountDownTimer(COUNTDOWN_TIME, ONE_SECOND) {
+            override fun onTick(millisUntilFinished: Long) {
+                _time.value = (_time.value)?.minus(1)
+            }
+
+            override fun onFinish() {
+                _eventGameFinish.value = true
+            }
+        }
+        timer.start()
+
         // eventGameFinish appropriately as the timer ticks and finishes
     }
 
@@ -98,9 +117,8 @@ class GameViewModel : ViewModel() {
     private fun nextWord() {
         //Select and remove a word from the list
         if (wordList.isEmpty()) {
-            // TODO (05) Update this logic so that the game doesn't finish;
-            // Instead the list is reset and re-shuffled when you run out of words
-            _eventGameFinish.value = true
+            resetList()
+//            _eventGameFinish.value = true
         } else {
             _word.value = wordList.removeAt(0)
         }
@@ -124,6 +142,8 @@ class GameViewModel : ViewModel() {
         _eventGameFinish.value = false
     }
 
-    // TODO (06) Cancel the timer in onCleared
-
+    override fun onCleared() {
+        super.onCleared()
+        timer.cancel()
+    }
 }
